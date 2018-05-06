@@ -4,12 +4,12 @@ import "math/rand"
 
 const mainMemorySize = 32 * 1024 // 32KB
 
-const pageFrameSize = 4096
+const PageFrameSize = 4096
 
-var Memory [(mainMemorySize / pageFrameSize)]pageFrame
+var Memory [(mainMemorySize / PageFrameSize)]pageFrame
 
 type pageFrame struct {
-	Entries [pageFrameSize]string
+	Entries [PageFrameSize]string
 	InUse   bool
 }
 

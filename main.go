@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/ashishmax31/memory-management/virtual-memory-simulation/cpu"
 	"github.com/ashishmax31/memory-management/virtual-memory-simulation/mainmemory"
@@ -16,6 +15,7 @@ func main() {
 	var processor cpu.Cpu
 	var proc process.Process
 	var pgtable pagetable.Pagetable
+	var pageFaultCount int
 	processor.CurrentExecutionContext = &proc
 	proc.PgeTble = &pgtable
 	proc.ProgramText = make(process.Entry)
@@ -27,10 +27,11 @@ func main() {
 	//var pagefault []int
 
 	for _, address := range addresses {
-		time.Sleep(500 * time.Millisecond)
-		fmt.Printf("Fetching address %x \n", address)
-		status, pageNum := processor.Fetch(address)
+		// time.Sleep(500 * time.Millisecond)
+		fmt.Printf("Fetching address 0x%x ", address)
+		status, _ := processor.Fetch(address)
 		if status == "restart" {
+			pageFaultCount++
 			// Page fault has occured need to restart the current instruction
 			processor.Fetch(address)
 			// pagefault = append(pagefault, pageNum)
@@ -49,4 +50,5 @@ func main() {
 		fmt.Printf("%+v \n", item)
 		// }
 	}
+	fmt.Printf("Total page faults: %d \n", pageFaultCount)
 }

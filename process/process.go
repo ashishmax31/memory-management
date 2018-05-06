@@ -9,7 +9,7 @@ import (
 	"github.com/ashishmax31/memory-management/virtual-memory-simulation/pagetable"
 )
 
-const programLength = 10
+const programLength = 100000
 
 var randSrc = rand.NewSource(time.Now().UnixNano())
 var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"strconv"
-	"time"
 
 	"github.com/ashishmax31/memory-management/virtual-memory-simulation/mainmemory"
 	"github.com/ashishmax31/memory-management/virtual-memory-simulation/pagetable"
@@ -17,26 +16,19 @@ type Cpu struct {
 }
 
 func (c *Cpu) Fetch(addr uint16) (string, int) {
-	// fmt.Printf("Accessing virtual address: %x by process %d \n", addr, c.CurrentExecutionContext.Pid)
 	virtualPageNumber, offset, err := translateVirtualAddressToPhysicalAddress(addr)
-	// fmt.Printf("Has virtual pageNumber: %d, offset: %d \n", virtualPageNumber, offset)
+	fmt.Printf("---> page: %d \n", virtualPageNumber)
 	if err != nil {
 		log.Panic("Fatal hardware exception.. CPU burned off! lol \n")
 	}
-
 	pageframeNumber, exception := c.CurrentExecutionContext.PgeTble.PageTableLookUp(virtualPageNumber)
 	if exception == pagetable.PageFaultException {
 		fmt.Println("PageFault!!! Accessing page from disk.")
-		err := c.HandlePageFault(virtualPageNumber, offset)
-		// println("Page fault")
-		if err != nil {
-			log.Panic("Couldnt free a page frame from memory :( \n")
-		}
+		c.HandlePageFault(virtualPageNumber, offset)
 		// restart the operation on successful page fault handling.
 		return "restart", virtualPageNumber
 	}
-	// fmt.Printf("Got page frame number: %d \n", pageframeNumber)
-	fmt.Printf("Data word from memory for the address: %x is : %s \n", addr, mainmemory.Memory[pageframeNumber].Entries[offset])
+	fmt.Printf("Data word from memory for the address: 0x%x is : %s \n", addr, mainmemory.Memory[pageframeNumber].Entries[offset])
 	return "", virtualPageNumber
 }
 
@@ -56,28 +48,27 @@ func translateVirtualAddressToPhysicalAddress(addr uint16) (int, int, error) {
 
 }
 
-func (c *Cpu) HandlePageFault(virtualPageNumber int, offset int) (err error) {
-	time.Sleep(3 * time.Second)
+func (c *Cpu) HandlePageFault(virtualPageNumber int, offset int) {
+	// time.Sleep(1 * time.Second)
+
 	pageFrameWrittenTo := bringRequiredPageFromDiskToRam(virtualPageNumber, c.CurrentExecutionContext)
 	for page, item := range c.CurrentExecutionContext.PgeTble {
 		if (c.CurrentExecutionContext.PgeTble[page].PageFrameNumber == pageFrameWrittenTo) && (item.Present) {
-			println("marked false")
 			c.CurrentExecutionContext.PgeTble[page].Present = false
 		}
 	}
 	c.CurrentExecutionContext.PgeTble[virtualPageNumber].PageFrameNumber = pageFrameWrittenTo
 	c.CurrentExecutionContext.PgeTble[virtualPageNumber].Present = true
-	return nil
 }
 
 func bringRequiredPageFromDiskToRam(virtualPageNumber int, currentProcess *process.Process) int {
 	pageFrameToWriteTo := mainmemory.GetPageFrame()
-	for page, programData := range currentProcess.ProgramText {
-		if page == virtualPageNumber {
-			for offset, data := range programData {
-				mainmemory.Memory[pageFrameToWriteTo].Entries[offset] = data
-			}
-		}
+
+	data := currentProcess.ProgramText[virtualPageNumber] // Get the page from disk
+
+	// Write the entire page from disk to the pageframe in main memory
+	for offset := 0; offset < mainmemory.PageFrameSize; offset++ {
+		mainmemory.Memory[pageFrameToWriteTo].Entries[offset] = data[offset]
 	}
 	mainmemory.Memory[pageFrameToWriteTo].InUse = true
 	return pageFrameToWriteTo
