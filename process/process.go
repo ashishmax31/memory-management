@@ -17,14 +17,12 @@ var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 type Process struct {
 	Pid         uint
 	PgeTble     *pagetable.Pagetable
-	ProgramText []Entry
+	ProgramText Entry
 }
 
-type Entry struct {
-	addrs uint16
-	Page  int
-	Data  string
-}
+type Entry map[int]Value
+
+type Value map[int]string
 
 func randSeq(n int) string {
 	b := make([]rune, n)
@@ -41,12 +39,8 @@ func (p *Process) GenerateVirtualAddressess() (memoryReferences []uint16) {
 		memoryReferences = append(memoryReferences, addr)
 		addressString := fmt.Sprintf("%016b", addr)
 		pageNumber, _ := strconv.ParseInt(addressString[0:4], 2, 64)
-		entry := Entry{
-			addrs: addr,
-			Page:  int(pageNumber),
-			Data:  randSeq(8),
-		}
-		p.ProgramText = append(p.ProgramText, entry)
+		offset, _ := strconv.ParseInt(addressString[4:16], 2, 64)
+		p.ProgramText[int(pageNumber)][int(offset)] = randSeq(8)
 	}
 	return memoryReferences
 }

@@ -14,7 +14,7 @@ type Page struct {
 }
 
 func (pgtble *Pagetable) PageTableLookUp(virtualPageNumber int) (pageFrameNumber int, exception string) {
-	page := pgtble[virtualPageNumber]
+	page := &pgtble[virtualPageNumber]
 	if page.Present {
 		page.Referenced = true
 		return page.PageFrameNumber, ""

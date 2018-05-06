@@ -3,8 +3,8 @@ package cpu
 import (
 	"fmt"
 	"log"
-	"math/rand"
 	"strconv"
+	"time"
 
 	"github.com/ashishmax31/memory-management/virtual-memory-simulation/mainmemory"
 	"github.com/ashishmax31/memory-management/virtual-memory-simulation/pagetable"
@@ -16,26 +16,28 @@ type Cpu struct {
 	currentAddress          uint16
 }
 
-func (c *Cpu) Fetch(addr uint16) (status string) {
+func (c *Cpu) Fetch(addr uint16) (string, int) {
 	// fmt.Printf("Accessing virtual address: %x by process %d \n", addr, c.CurrentExecutionContext.Pid)
 	virtualPageNumber, offset, err := translateVirtualAddressToPhysicalAddress(addr)
-	fmt.Printf("Has virtual pageNumber: %d, offset: %d \n", virtualPageNumber, offset)
+	// fmt.Printf("Has virtual pageNumber: %d, offset: %d \n", virtualPageNumber, offset)
 	if err != nil {
 		log.Panic("Fatal hardware exception.. CPU burned off! lol \n")
 	}
+
 	pageframeNumber, exception := c.CurrentExecutionContext.PgeTble.PageTableLookUp(virtualPageNumber)
 	if exception == pagetable.PageFaultException {
-		err := c.HandlePageFault(virtualPageNumber)
-		println("Page fault")
+		fmt.Println("PageFault!!! Accessing page from disk.")
+		err := c.HandlePageFault(virtualPageNumber, offset)
+		// println("Page fault")
 		if err != nil {
 			log.Panic("Couldnt free a page frame from memory :( \n")
 		}
 		// restart the operation on successful page fault handling.
-		return "restart"
+		return "restart", virtualPageNumber
 	}
-	fmt.Printf("Got page frame number: %d \n", pageframeNumber)
-	println(mainmemory.Memory[pageframeNumber].Entries[offset])
-	return ""
+	// fmt.Printf("Got page frame number: %d \n", pageframeNumber)
+	fmt.Printf("Data word from memory for the address: %x is : %s \n", addr, mainmemory.Memory[pageframeNumber].Entries[offset])
+	return "", virtualPageNumber
 }
 
 // MMU does this function
@@ -54,40 +56,29 @@ func translateVirtualAddressToPhysicalAddress(addr uint16) (int, int, error) {
 
 }
 
-func (c *Cpu) HandlePageFault(virtualPageNumber int) (err error) {
-	var pageForReplacement int
-	for {
-		n := rand.Intn(len(c.CurrentExecutionContext.PgeTble))
-		if virtualPageNumber != n {
-			pageForReplacement = n
-			break
+func (c *Cpu) HandlePageFault(virtualPageNumber int, offset int) (err error) {
+	time.Sleep(3 * time.Second)
+	pageFrameWrittenTo := bringRequiredPageFromDiskToRam(virtualPageNumber, c.CurrentExecutionContext)
+	for page, item := range c.CurrentExecutionContext.PgeTble {
+		if (c.CurrentExecutionContext.PgeTble[page].PageFrameNumber == pageFrameWrittenTo) && (item.Present) {
+			println("marked false")
+			c.CurrentExecutionContext.PgeTble[page].Present = false
 		}
 	}
-	// Mark the selected page for replacement as in use(Present = false) and move the corresponding page-frame to disk.
-	pageFrameWrittenTo := bringRequiredPageFromDiskToRam(virtualPageNumber, c.CurrentExecutionContext, pageForReplacement)
 	c.CurrentExecutionContext.PgeTble[virtualPageNumber].PageFrameNumber = pageFrameWrittenTo
 	c.CurrentExecutionContext.PgeTble[virtualPageNumber].Present = true
 	return nil
 }
 
-func bringRequiredPageFromDiskToRam(virtualPageNumber int, currentProcess *process.Process, pageForReplacement int) int {
-	var pageFrameToWriteTo int
-	if currentProcess.PgeTble[pageForReplacement].Present {
-		pageFrameToWriteTo = currentProcess.PgeTble[pageForReplacement].PageFrameNumber
-		currentProcess.PgeTble[pageForReplacement].Present = false
-	} else {
-		pageFrameToWriteTo = rand.Intn(len(mainmemory.Memory))
-	}
-	var entriesTobeWrittenToRam []process.Entry
-	for _, program_data := range currentProcess.ProgramText {
-		if program_data.Page == virtualPageNumber {
-			entriesTobeWrittenToRam = append(entriesTobeWrittenToRam, program_data)
+func bringRequiredPageFromDiskToRam(virtualPageNumber int, currentProcess *process.Process) int {
+	pageFrameToWriteTo := mainmemory.GetPageFrame()
+	for page, programData := range currentProcess.ProgramText {
+		if page == virtualPageNumber {
+			for offset, data := range programData {
+				mainmemory.Memory[pageFrameToWriteTo].Entries[offset] = data
+			}
 		}
 	}
-	for i, entry := range entriesTobeWrittenToRam {
-		mainmemory.Memory[pageFrameToWriteTo].Entries[i] = entry.Data
-	}
-	mainmemory.Memory[pageFrameToWriteTo].Free = false
+	mainmemory.Memory[pageFrameToWriteTo].InUse = true
 	return pageFrameToWriteTo
-
 }
