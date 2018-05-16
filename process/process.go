@@ -1,46 +1,55 @@
 package process
 
 import (
-	"fmt"
+	"bufio"
 	"math/rand"
-	"strconv"
+	"os"
 	"time"
 
 	"github.com/ashishmax31/memory-management/virtual-memory-simulation/pagetable"
 )
 
-const programLength = 100000
+const programLength = 64000
+
+var cachedProgram []string
 
 var randSrc = rand.NewSource(time.Now().UnixNano())
 var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
 type Process struct {
-	Pid         uint
-	PgeTble     *pagetable.Pagetable
-	ProgramText Entry
+	Pid             uint
+	PgeTble         *pagetable.Pagetable
+	ProgramLocation *os.File
 }
 
-type Entry map[int]Value
+func (p *Process) GenerateProgramVirtualAddress() uint16 {
+	program_word := rand.Intn(programLength)
+	addr := uint16(program_word)
+	return addr
+	// memoryReferences = append(memoryReferences, addr)
 
-type Value map[int]string
-
-func randSeq(n int) string {
-	b := make([]rune, n)
-	for i := range b {
-		b[i] = letters[rand.Intn(len(letters))]
-	}
-	return string(b)
 }
 
-func (p *Process) GenerateVirtualAddressess() (memoryReferences []uint16) {
-	rnd := rand.New(randSrc)
-	for i := 0; i < programLength; i++ {
-		addr := uint16(rnd.Uint64())
-		memoryReferences = append(memoryReferences, addr)
-		addressString := fmt.Sprintf("%016b", addr)
-		pageNumber, _ := strconv.ParseInt(addressString[0:4], 2, 64)
-		offset, _ := strconv.ParseInt(addressString[4:16], 2, 64)
-		p.ProgramText[int(pageNumber)][int(offset)] = randSeq(8)
+func (p *Process) BringPageFromDisk(pagenumber int) []string {
+	startingAddress := pagenumber * 4096
+	endingAddress := startingAddress + 4096
+	if len(cachedProgram) == 0 {
+		text := readProgramFromdisk(pagenumber)
+		return text[startingAddress:endingAddress]
+	} else {
+		return cachedProgram[startingAddress:endingAddress]
 	}
-	return memoryReferences
+}
+
+func readProgramFromdisk(pagenumber int) []string {
+	file, err := os.Open("./program_1")
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		cachedProgram = append(cachedProgram, scanner.Text())
+	}
+	return cachedProgram
 }

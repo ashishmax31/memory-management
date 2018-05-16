@@ -64,7 +64,7 @@ func (c *Cpu) HandlePageFault(virtualPageNumber int, offset int) {
 func bringRequiredPageFromDiskToRam(virtualPageNumber int, currentProcess *process.Process) int {
 	pageFrameToWriteTo := mainmemory.GetPageFrame()
 
-	data := currentProcess.ProgramText[virtualPageNumber] // Get the page from disk
+	data := currentProcess.BringPageFromDisk(virtualPageNumber) // Get the page from disk
 
 	// Write the entire page from disk to the pageframe in main memory
 	for offset := 0; offset < mainmemory.PageFrameSize; offset++ {

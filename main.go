@@ -1,54 +1,7 @@
 package main
 
-import (
-	"fmt"
-
-	"github.com/ashishmax31/memory-management/virtual-memory-simulation/cpu"
-	"github.com/ashishmax31/memory-management/virtual-memory-simulation/mainmemory"
-	"github.com/ashishmax31/memory-management/virtual-memory-simulation/pagetable"
-	"github.com/ashishmax31/memory-management/virtual-memory-simulation/process"
-)
+import "github.com/ashishmax31/memory-management/virtual-memory-simulation/simulation"
 
 func main() {
-
-	// Initialize hardware
-	var processor cpu.Cpu
-	var proc process.Process
-	var pgtable pagetable.Pagetable
-	var pageFaultCount int
-	processor.CurrentExecutionContext = &proc
-	proc.PgeTble = &pgtable
-	proc.ProgramText = make(process.Entry)
-	for i := 0; i < 16; i++ {
-		proc.ProgramText[i] = make(process.Value)
-	}
-	// Get list of program generated addresses.
-	addresses := proc.GenerateVirtualAddressess()
-	//var pagefault []int
-
-	for _, address := range addresses {
-		// time.Sleep(500 * time.Millisecond)
-		fmt.Printf("Fetching address 0x%x ", address)
-		status, _ := processor.Fetch(address)
-		if status == "restart" {
-			pageFaultCount++
-			// Page fault has occured need to restart the current instruction
-			processor.Fetch(address)
-			// pagefault = append(pagefault, pageNum)
-		}
-		fmt.Printf("\n\n")
-	}
-
-	// Overview
-	fmt.Printf("Memory: \n")
-	for _, item := range mainmemory.Memory {
-		fmt.Printf("%v", item.InUse)
-	}
-	fmt.Printf("Pagetable: \n")
-	for _, item := range proc.PgeTble {
-		// if item.Referenced {
-		fmt.Printf("%+v \n", item)
-		// }
-	}
-	fmt.Printf("Total page faults: %d \n", pageFaultCount)
+	simulation.StartSimualtion()
 }
