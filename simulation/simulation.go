@@ -18,7 +18,7 @@ var clock *time.Ticker
 var processes []process.Process
 var counter uint64
 
-func StartSimualtion() {
+func StartSimulation() {
 	// In this simulation just assume pagetable of the respective process is brought in to the main memory.
 	InitializeProcesses()
 	// Run the scheduler for the first time.
