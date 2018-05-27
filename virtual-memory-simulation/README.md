@@ -4,7 +4,7 @@ A simulation to understand the concepts of virtual memory in operating systems, 
 # How to run:
  * Clone the repo
  
- * `cd` into the repo
+ * cd into the repo `cd <xyx>/memory-management/virtual-memory-simulation/` 
  
  * Run `go build`
  
