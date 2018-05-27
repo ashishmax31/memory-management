@@ -6,6 +6,8 @@ A simulation to understand the concepts of virtual memory in operating systems, 
  
  * cd into the repo `cd <xyx>/memory-management/virtual-memory-simulation/` 
  
+ * run `export GOPATH=($PWD)`
+ 
  * Run `go build`
  
  * Run `./virtual-memory-simulation`
